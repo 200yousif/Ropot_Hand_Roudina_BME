@@ -1,0 +1,55 @@
+#include <Servo.h>
+#include <SoftwareSerial.h>
+
+#define BT_RX 11  
+#define BT_TX 12  
+SoftwareSerial bluetooth(BT_RX, BT_TX); 
+
+Servo servos[5];
+int servoPins[5] = {3, 5, 6, 9, 10};
+const int openAngle = 180;
+const int closeAngle = 0;
+const int neutralAngle = 90;
+
+void setup() {
+  Serial.begin(9600);
+  bluetooth.begin(9600);
+  
+  for (int i = 0; i < 5; i++) {
+    servos[i].attach(servoPins[i]);
+    servos[i].write(neutralAngle);
+    delay(100); // تأخير بسيط بين تهيئة كل محرك
+  }
+  
+  bluetooth.println("جاهز للاستقبال: قل 'افتح' أو 'اقبض' أو 'التقط'");
+}
+
+void loop() {
+  if (bluetooth.available()) {
+    String command = bluetooth.readStringUntil('\n');
+    command.trim();
+    
+    if (command == "افتح") {
+      moveAllServos(openAngle);
+      bluetooth.println("تم فتح جميع المحركات");
+    } 
+    else if (command == "اقبض") {
+      moveAllServos(closeAngle);
+      bluetooth.println("تم إغلاق جميع المحركات");
+    }
+    else if (command == "التقط") {
+      servos[0].write(openAngle); // السيرفو على المنفذ 3
+      for (int i = 1; i < 5; i++) {
+        servos[i].write(closeAngle);
+      }
+      bluetooth.println("وضع الالتقاط: المحرك 3 مفتوح، الباقي مغلق");
+    }
+  }
+}
+
+void moveAllServos(int angle) {
+  for (int i = 0; i < 5; i++) {
+    servos[i].write(angle);
+    delay(15); // تأخير بسيط بين تحريك كل محرك
+  }
+}
